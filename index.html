@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ryanair Business Model & Fleet Simulator - YouTube Master Edition</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ry: {
+                            blue: '#073590',
+                            darkblue: '#031742',
+                            midnight: '#020b1f',
+                            yellow: '#FFE500',
+                            yellowHover: '#e6ce00',
+                            accentRed: '#FF4757',
+                            accentGreen: '#2ED573',
+                            cardBg: '#0f172a',
+                            border: '#1e293b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #020b1f;
+            color: #f8fafc;
+        }
+
+        /* Custom Styling for Range Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: #1e293b;
+            height: 8px;
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #FFE500;
+            border: 2px solid #073590;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 229, 0, 0.5);
+            transition: transform 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1rem;
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .gradient-border-yellow {
+            border-top: 4px solid #FFE500;
+        }
+        .gradient-border-blue {
+            border-top: 4px solid #073590;
+        }
+        .gradient-border-red {
+            border-top: 4px solid #FF4757;
+        }
+        .gradient-border-green {
+            border-top: 4px solid #2ED573;
+        }
+
+        /* Scratch Card Canvas Styling */
+        #scratch-canvas {
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        /* Custom Scrollbar for Aircraft Grid */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #073590;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #FFE500;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased min-h-screen pb-16 selection:bg-ry-yellow selection:text-ry-darkblue">
+
+    <!-- HEADER / CONTROL BAR FOR YOUTUBE RECORDING -->
+    <header class="bg-ry-darkblue/90 sticky top-0 z-50 backdrop-blur-md border-b border-ry-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+            
+            <div class="flex items-center space-x-3">
+                <div class="bg-ry-yellow text-ry-darkblue p-2.5 rounded-xl font-black text-2xl shadow-lg shadow-ry-yellow/20">
+                    <i class="fa-solid fa-plane-flight"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                        RYANAIR <span class="text-ry-yellow">BUSINESS LAB</span>
+                        <span class="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">YouTube Ed.</span>
+                    </h1>
+                    <p class="text-xs text-blue-300/80">Interaktives Simulations-Tool für Video-Recordings & Präsentationen</p>
+                </div>
+            </div>
+
+            <!-- YouTube Video Preset & Benchmark Reset Buttons -->
+            <div class="flex flex-wrap gap-2 justify-center items-center">
+                <button onclick="applyScenario('default')" class="px-3.5 py-2 bg-ry-yellow text-ry-darkblue hover:bg-ry-yellowHover font-black rounded-xl text-xs shadow-lg shadow-ry-yellow/20 transition flex items-center gap-1.5 border border-amber-300">
+                    <i class="fa-solid fa-rotate-left"></i> Auf Ryanair-Standard zurücksetzen
+                </button>
+                <div class="h-5 w-px bg-slate-700 hidden sm:block"></div>
+                <button onclick="applyScenario('bait')" class="px-3 py-1.5 bg-amber-950/70 hover:bg-amber-500 hover:text-black border border-amber-600/40 rounded-lg text-xs font-bold text-amber-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-fish"></i> 9,99 € Lockvogel
+                </button>
+                <button onclick="applyScenario('major-hub')" class="px-3 py-1.5 bg-red-950/70 hover:bg-red-600 hover:text-white border border-red-600/40 rounded-lg text-xs font-bold text-red-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-city"></i> Großflughafen-Falle
+                </button>
+                <button onclick="applyScenario('mixed-fleet')" class="px-3 py-1.5 bg-purple-950/70 hover:bg-purple-600 hover:text-white border border-purple-600/40 rounded-lg text-xs font-bold text-purple-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-shuffle"></i> Flotten-Chaos
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT GRID -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT PANEL: CONTROLS & MODULES (5 Cols) -->
+        <section class="lg:col-span-5 space-y-5">
+
+            <!-- MODULE 1: EXPANDED AIRCRAFT SELECTION -->
+            <div class="glass-card p-5 gradient-border-yellow">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-plane text-ry-yellow"></i> 1. Flugzeugmodell ("Was wäre wenn?")
+                    </h2>
+                    <span id="fleet-badge" class="text-[10px] bg-ry-yellow/10 text-ry-yellow border border-ry-yellow/30 font-bold px-2 py-0.5 rounded-full">Single-Type Fleet</span>
+                </div>
+
+                <!-- Aircraft Selection Grid -->
+                <div class="grid grid-cols-2 gap-2 mb-3 max-h-64 overflow-y-auto p-1 custom-scrollbar">
+                    <button id="ac-b737max" onclick="setAircraft('b737max')" class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-ry-blue border-ry-yellow text-white shadow-lg">
+                        <div>
+                            <div class="font-extrabold text-xs text-ry-yellow">Boeing 737 MAX 8-200</div>
+                            <div class="text-[10px] text-slate-300">Ryanair "Gamechanger"</div>
+                        </div>
+                        <div class="text-[10px] font-mono mt-1 text-emerald-400">197 Sitze • Effizient</div>
+                    </button>
+
+                    <button id="ac-b737classic" onclick="setAircraft('b737classic')" class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500">
+                        <div>
+                            <div class="font-bold text-xs">Boeing 737-800</div>
+                            <div class="text-[10px] text-slate-500">Ryanair Flotten-Standard</div>
+                        </div>
+                        <div class="text-[10px] font-mono mt-1 text-emerald-400">189 Sitze • Bewährt</div>
+                    </button>
+
+                    <button id="ac-a320neo" onclick="setAircraft('a320neo')" class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500">
+                        <div>
+                            <div class="font-bold text-xs">Airbus A320neo</div>
+                            <div class="text-[10px] text-slate-500">Standard Konkurrenz</div>
+                        </div>
+                        <div class="text-[10px] font-mono mt-1 text-amber-400">180 Sitze • Standard</div>
+                    </button>
+
+                    <button id="ac-a380" onclick="setAircraft('a380')" class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500">
+                        <div>
+                            <div class="font-bold text-xs">Airbus A380</div>
+                            <div class="text-[10px] text-slate-500">Superjumbo-Doppeldecker</div>
+                        </div>
+                        <div class="text-[10px] font-mono mt-1 text-red-400">525 Sitze • Extrem teuer</div>
+                    </button>
+
+                    <button id="ac-e190" onclick="setAircraft('e190')" class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500">
+                        <div>
+                            <div class="font-bold text-xs">Embraer E190</div>
+                            <div class="text-[10px] text-slate-500">Regionaljet</div>
+                        </div>
+                        <div class="text-[10px] font-mono mt-1 text-red-400">100 Sitze • Teuer/Sitz</div>
+                    </button>
+
+                    <button id="ac-dash8" onclick="setAircraft('dash8')" class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500">
+                        <div>
+                            <div class="font-bold text-xs">Dash 8 Q400</div>
+                            <div class="text-[10px] text-slate-500">Turboprop-Maschine</div>
+                        </div>
+                        <div class="text-[10px] font-mono mt-1 text-amber-400">76 Sitze • Langsam</div>
+                    </button>
+
+                    <button id="ac-concorde" onclick="setAircraft('concorde')" class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500">
+                        <div>
+                            <div class="font-bold text-xs">Concorde</div>
+                            <div class="text-[10px] text-slate-500">Superschall-Airliner</div>
+                        </div>
+                        <div class="text-[10px] font-mono mt-1 text-purple-400">100 Sitze • Kerosinfresser</div>
+                    </button>
+
+                    <button id="ac-b777" onclick="setAircraft('b777')" class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500">
+                        <div>
+                            <div class="font-bold text-xs">Boeing 777-300ER</div>
+                            <div class="text-[10px] text-slate-500">Langstrecken-Riese</div>
+                        </div>
+                        <div class="text-[10px] font-mono mt-1 text-red-400">396 Sitze • Großraum</div>
+                    </button>
+                </div>
+
+                <!-- Mixed Fleet Penalty Toggle -->
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-slate-200">Gemischte Flotte aktivieren?</div>
+                        <div class="text-[10px] text-slate-400">Mehrere Flugzeugtypen gleichzeitig betreiben</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="mixedFleetToggle" class="sr-only peer" onchange="calculateAll()">
+                        <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                </div>
+                <p id="fleet-penalty-info" class="text-[10px] text-purple-400 mt-2 hidden">
+                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Flotten-Malus aktiv:</strong> +25% Schulungskosten, +30% Ersatzteillager, +15% Wartungsaufwand durch Typen-Mix!
+                </p>
+            </div>
+
+            <!-- MODULE 2: FLIGHT OPERATIONS, GROUND TIME & AIRPORT STRATEGY -->
+            <div class="glass-card p-5 gradient-border-blue">
+                <h2 class="text-sm font-black text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-stopwatch text-blue-400"></i> 2. Bodenzeit & Flugbetrieb
+                </h2>
+
+                <div class="space-y-4 text-xs">
+                    <!-- Turnaround / Bodenzeit Slider -->
+                    <div class="bg-blue-950/30 p-3 rounded-xl border border-blue-500/20">
+                        <div class="flex justify-between font-bold mb-1">
+                            <span class="text-slate-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-plane-arrival text-ry-yellow"></i> Bodenzeit (Turnaround):
+                            </span>
+                            <span class="text-ry-yellow font-mono text-sm font-black"><span id="val-turnaroundTime">25</span> Min.</span>
+                        </div>
+                        <input type="range" id="turnaroundTime" min="15" max="120" step="5" value="25" oninput="calculateAll()">
+                        <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+                            <span>15 Min (Extrem)</span>
+                            <span class="text-ry-yellow font-bold">25 Min (Ryanair-Standard)</span>
+                            <span>120 Min (Normal-Airline)</span>
+                        </div>
+                    </div>
+
+                    <!-- Flight Duration -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span class="text-slate-300">Flugdauer / Streckenlänge</span>
+                            <span class="text-ry-yellow font-mono"><span id="val-flightDuration">2.1</span> Std.</span>
+                        </div>
+                        <input type="range" id="flightDuration" min="1.0" max="8.0" step="0.1" value="2.1" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Fleet Size -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span class="text-slate-300">Flottengröße</span>
+                            <span class="text-ry-yellow font-mono"><span id="val-fleetSize">550</span> Maschinen</span>
+                        </div>
+                        <input type="range" id="fleetSize" min="1" max="700" value="550" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Passenger Load Factor -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span class="text-slate-300">Passagier-Auslastung</span>
+                            <span class="text-ry-yellow font-mono"><span id="val-loadFactor">94</span>% (<span id="val-passengerCount">185</span> Passagiere)</span>
+                        </div>
+                        <input type="range" id="loadFactor" min="40" max="100" value="94" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Base Ticket Price -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span class="text-slate-300">Ticketpreis (Basis-Durchschnitt)</span>
+                            <span class="text-emerald-400 font-mono font-black"><span id="val-basePrice">50.60</span> €</span>
+                        </div>
+                        <input type="range" id="basePrice" min="9.99" max="250" step="1" value="50.60" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Airport Toggle Buttons -->
+                    <div class="pt-2">
+                        <label class="text-xs font-bold text-slate-300 block mb-2">Flughafen-Kategorie:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btn-sec-airport" onclick="setAirport('secondary')" class="p-2 rounded-xl border font-bold text-center transition flex flex-col items-center bg-ry-blue border-ry-yellow text-white">
+                                <span><i class="fa-solid fa-tree-city mr-1"></i> Regionalflughafen</span>
+                                <span class="text-[9px] font-normal opacity-80">(Günstig / Memmingen, Hahn)</span>
+                            </button>
+                            <button id="btn-maj-airport" onclick="setAirport('major')" class="p-2 rounded-xl border font-bold text-center transition flex flex-col items-center bg-slate-900 border-slate-700 text-slate-400">
+                                <span><i class="fa-solid fa-city mr-1"></i> Großflughafen</span>
+                                <span class="text-[9px] font-normal opacity-80">(Teuer / Frankfurt, LHR)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Crew Hotel Stay Toggle -->
+                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-slate-200">Point-to-Point Crew-Prinzip</div>
+                            <div class="text-[10px] text-slate-400">Crew schläft zu Hause (0 € Hotelkosten)</div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="crewHomeToggle" checked class="sr-only peer" onchange="calculateAll()">
+                            <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 3: ANCILLARY REVENUE & LOTTERY -->
+            <div class="glass-card p-5 gradient-border-red">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-amber-400"></i> 3. Zusatzverkäufe (Ancillary)
+                    </h2>
+                    <span class="text-xs text-amber-300 font-mono font-bold">Ø ~24,00 €/Pax</span>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <!-- Hand/Checked Baggage -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span><i class="fa-solid fa-suitcase-rolling text-amber-500 w-4"></i> Gepäck (+32 €)</span>
+                            <span class="text-ry-yellow font-mono"><span id="val-baggage">68</span>% der Gäste</span>
+                        </div>
+                        <input type="range" id="baggage" min="0" max="100" value="68" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Seat Reservation -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span><i class="fa-solid fa-chair text-purple-400 w-4"></i> Sitzplatzwahl (+14 €)</span>
+                            <span class="text-ry-yellow font-mono"><span id="val-seats">58</span>% der Gäste</span>
+                        </div>
+                        <input type="range" id="seats" min="0" max="100" value="58" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Priority Boarding -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span><i class="fa-solid fa-person-walking-luggage text-blue-400 w-4"></i> Priority Boarding (+20 €)</span>
+                            <span class="text-ry-yellow font-mono"><span id="val-prio">42</span>% der Gäste</span>
+                        </div>
+                        <input type="range" id="prio" min="0" max="100" value="42" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Food & Drinks -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span><i class="fa-solid fa-utensils text-red-400 w-4"></i> Snacks & Getränke (+8 €)</span>
+                            <span class="text-ry-yellow font-mono"><span id="val-food">38</span>% der Gäste</span>
+                        </div>
+                        <input type="range" id="food" min="0" max="100" value="38" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Travel Insurance / Car Rental Commission -->
+                    <div>
+                        <div class="flex justify-between font-bold mb-1">
+                            <span><i class="fa-solid fa-car-rear text-emerald-400 w-4"></i> Mietwagen/Hotels (+18 € Prov.)</span>
+                            <span class="text-ry-yellow font-mono"><span id="val-partners">15</span>% der Gäste</span>
+                        </div>
+                        <input type="range" id="partners" min="0" max="100" value="15" oninput="calculateAll()">
+                    </div>
+
+                    <!-- Ryanair Scratch Card Lottery -->
+                    <div class="pt-2 border-t border-slate-800">
+                        <div class="flex justify-between font-bold mb-1 text-amber-300">
+                            <span><i class="fa-solid fa-ticket text-amber-400 w-4"></i> Bord-Lotterie Rubbellose (+2 €)</span>
+                            <span class="text-amber-400 font-mono"><span id="val-lottery">30</span>% kaufen</span>
+                        </div>
+                        <input type="range" id="lottery" min="0" max="100" value="30" oninput="calculateAll()">
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT PANEL: DASHBOARD, CHARTS & SCRATCHCARD (7 Cols) -->
+        <section class="lg:col-span-7 space-y-5">
+
+            <!-- TOP KPI STAT CARDS -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                
+                <!-- Revenue Card -->
+                <div class="glass-card p-4 border border-blue-500/30 bg-blue-950/20">
+                    <div class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">Einnahmen / Flug</div>
+                    <div class="text-2xl font-black text-white mt-0.5" id="total-revenue-display">0 €</div>
+                    <div class="text-[10px] text-slate-400 mt-1" id="ticket-vs-extras-sub">0 € Ticket | 0 € Extras</div>
+                </div>
+
+                <!-- Ancillary Share Card -->
+                <div class="glass-card p-4 border border-amber-500/30 bg-amber-950/20">
+                    <div class="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Anteil Zusatzverkäufe</div>
+                    <div class="text-2xl font-black text-ry-yellow mt-0.5" id="ancillary-percentage-display">0%</div>
+                    <div class="text-[10px] text-amber-200/80 mt-1 font-mono" id="ancillary-total-display">0 € pro Pax</div>
+                </div>
+
+                <!-- Net Profit Card -->
+                <div class="glass-card p-4 border border-emerald-500/30 bg-emerald-950/20">
+                    <div class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Netto-Gewinn / Flug</div>
+                    <div class="text-2xl font-black text-emerald-400 mt-0.5" id="net-profit-display">0 €</div>
+                    <div class="text-[10px] font-bold text-emerald-300 mt-1" id="daily-fleet-profit-display">Tagesgewinn: 0 €</div>
+                </div>
+
+            </div>
+
+            <!-- MAIN VISUAL: COST & REVENUE COMPARISON BAR -->
+            <div class="glass-card p-5">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-ry-yellow"></i> Ticket-Preis vs. Echte Einnahmen
+                    </h3>
+                    <div class="text-xs font-mono font-bold text-slate-400">
+                        Gesamtkosten Flug: <span id="flight-cost-display" class="text-red-400">0 €</span>
+                    </div>
+                </div>
+
+                <!-- Dual Segmented Progress Bar -->
+                <div class="mb-5">
+                    <div class="flex justify-between text-xs font-bold mb-1.5">
+                        <span class="text-blue-400">Nackter Ticketpreis: <span id="ticket-share-percent">0%</span></span>
+                        <span class="text-ry-yellow">Zusatzverkäufe (Ancillary): <span id="ancillary-share-percent">0%</span></span>
+                    </div>
+                    <div class="w-full h-6 bg-slate-900 rounded-xl overflow-hidden p-0.5 border border-slate-800 flex gap-0.5 shadow-inner">
+                        <div id="bar-ticket" class="bg-ry-blue h-full rounded-l-lg transition-all duration-300 flex items-center justify-center text-[10px] text-white font-black" style="width: 50%"></div>
+                        <div id="bar-ancillary" class="bg-ry-yellow h-full rounded-r-lg transition-all duration-300 flex items-center justify-center text-[10px] text-ry-darkblue font-black" style="width: 50%"></div>
+                    </div>
+                </div>
+
+                <!-- Dual Charts Container -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 h-52">
+                    <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+                        <div class="text-[11px] font-bold text-slate-400 text-center">Einnahmen-Aufschlüsselung</div>
+                        <div class="relative h-40">
+                            <canvas id="revenuePieChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+                        <div class="text-[11px] font-bold text-slate-400 text-center">Kosten-Struktur pro Flug</div>
+                        <div class="relative h-40">
+                            <canvas id="costBreakdownChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLAYABLE SCRATCH CARD DEMO FOR VIDEO -->
+            <div class="glass-card p-5 border border-amber-500/40 bg-gradient-to-r from-amber-950/30 via-slate-900 to-amber-950/20">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="bg-amber-500 text-ry-darkblue text-[10px] font-black px-2 py-0.5 rounded uppercase">Live Interaktiv</span>
+                            <h4 class="font-black text-white text-sm">Bord-Lotterie "Fly & Win" Rubbellos</h4>
+                        </div>
+                        <p class="text-xs text-slate-300 max-w-xs leading-relaxed">
+                            Rubbele das Feld live im Video frei! Ryanair verkauft Millionen dieser Lose im Gang – reine Marge!
+                        </p>
+                        <button onclick="resetScratchCard()" class="mt-2 text-xs font-bold text-ry-yellow hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-rotate"></i> Neues Los laden
+                        </button>
+                    </div>
+
+                    <!-- Interactive Canvas Widget -->
+                    <div class="relative w-52 h-24 bg-slate-900 rounded-xl border-2 border-amber-400/80 overflow-hidden shadow-lg flex-shrink-0">
+                        <!-- Secret Prize Layer Behind Canvas -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-yellow-300 to-amber-500 text-ry-darkblue p-2 text-center select-none">
+                            <i class="fa-solid fa-car-side text-2xl mb-0.5"></i>
+                            <span class="text-[11px] font-black uppercase tracking-wider">GEWONNEN!</span>
+                            <span class="text-[9px] font-bold">1x VW POLO ODER 1 MILLION €</span>
+                        </div>
+                        <!-- Canvas Overlay Layer -->
+                        <canvas id="scratch-canvas" width="208" height="96" class="absolute inset-0 z-10"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DYNAMIC YOUTUBE EXPLANATION INSIGHT BOX -->
+            <div class="glass-card p-5 border border-blue-500/30 bg-blue-950/30">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-xs font-black text-ry-yellow uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb text-amber-400"></i> YouTube Skript-Erklärung
+                    </h4>
+                    <span id="rotation-stat" class="text-[10px] bg-blue-900/60 text-blue-200 border border-blue-700 font-mono px-2 py-0.5 rounded-full">6 Flüge/Tag pro Jet</span>
+                </div>
+                <p id="dynamic-insight-text" class="text-xs text-slate-200 leading-relaxed font-normal">
+                    Berechne Kennzahlen...
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- BOTTOM EXPLANATION STRIP FOR PRESENTATION -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+        <h3 class="text-lg font-black text-white text-center mb-6 uppercase tracking-wider">
+            DIE 4 SÄULEN DER RYANAIR GEWINN-MASCHINE
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <div class="glass-card p-4 gradient-border-yellow">
+                <div class="text-ry-yellow font-extrabold text-sm mb-1.5 flex items-center gap-2">
+                    <i class="fa-solid fa-plane-circle-check"></i> Single-Type Fleet
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Ausschließlich Boeing 737. Piloten, Mechaniker und Crew brauchen nur eine Lizenz. Das spart hunderte Millionen Schulungs- und Lagerkosten.
+                </p>
+            </div>
+
+            <div class="glass-card p-4 gradient-border-blue">
+                <div class="text-blue-400 font-extrabold text-sm mb-1.5 flex items-center gap-2">
+                    <i class="fa-solid fa-stopwatch"></i> 25 Min. Turnaround
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Ein Flugzeug verdient nur Geld in der Luft. Schnelle Abfertigung ohne Passagierbrücken erlaubt bis zu 6-8 Flüge pro Tag.
+                </p>
+            </div>
+
+            <div class="glass-card p-4 gradient-border-red">
+                <div class="text-amber-400 font-extrabold text-sm mb-1.5 flex items-center gap-2">
+                    <i class="fa-solid fa-coins"></i> Ancillary Engine
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Das Ticket ist der Köder. Gewinn entsteht durch Koffer, Sitzplätze, Rubbellose und Vermittlungsprovisionen für Hotels.
+                </p>
+            </div>
+
+            <div class="glass-card p-4 gradient-border-green">
+                <div class="text-emerald-400 font-extrabold text-sm mb-1.5 flex items-center gap-2">
+                    <i class="fa-solid fa-house-chimney"></i> Base-Sleep Policy
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Flugzeuge kehren abends zur Heimatbasis zurück. Keine teuren Hotelübernachtungen oder Tagesgelder für Crews.
+                </p>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        let pieChart, barChart;
+        let currentAircraft = 'b737max';
+        let currentAirport = 'secondary';
+
+        // Expanded Aircraft Database Specification
+        const aircraftData = {
+            b737max: { name: "Boeing 737 MAX 8-200", seats: 197, fuelPerHour: 1450, maintenanceFactor: 1.0, defaultTurnaround: 25 },
+            b737classic: { name: "Boeing 737-800", seats: 189, fuelPerHour: 1600, maintenanceFactor: 1.05, defaultTurnaround: 25 },
+            a320neo: { name: "Airbus A320neo", seats: 180, fuelPerHour: 1550, maintenanceFactor: 1.15, defaultTurnaround: 35 },
+            a380: { name: "Airbus A380-800", seats: 525, fuelPerHour: 9500, maintenanceFactor: 3.2, defaultTurnaround: 90 },
+            e190: { name: "Embraer E190", seats: 100, fuelPerHour: 1100, maintenanceFactor: 1.4, defaultTurnaround: 25 },
+            dash8: { name: "Bombardier Dash 8 Q400", seats: 76, fuelPerHour: 750, maintenanceFactor: 1.25, defaultTurnaround: 20 },
+            concorde: { name: "Concorde Supersonic", seats: 100, fuelPerHour: 16000, maintenanceFactor: 5.0, defaultTurnaround: 45 },
+            b777: { name: "Boeing 777-300ER", seats: 396, fuelPerHour: 6200, maintenanceFactor: 2.1, defaultTurnaround: 75 }
+        };
+
+        window.onload = function() {
+            initCharts();
+            initScratchCard();
+            calculateAll();
+        };
+
+        function setAircraft(type) {
+            currentAircraft = type;
+            const types = ['b737max', 'b737classic', 'a320neo', 'a380', 'e190', 'dash8', 'concorde', 'b777'];
+            
+            types.forEach(t => {
+                const btn = document.getElementById(`ac-${t}`);
+                if (btn) {
+                    if (t === type) {
+                        btn.className = "p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-ry-blue border-ry-yellow text-white shadow-lg";
+                    } else {
+                        btn.className = "p-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500";
+                    }
+                }
+            });
+
+            // Auto adapt turnaround slider if user selects giant aircraft
+            const spec = aircraftData[type];
+            if (spec) {
+                document.getElementById('turnaroundTime').value = spec.defaultTurnaround;
+            }
+
+            calculateAll();
+        }
+
+        function setAirport(type) {
+            currentAirport = type;
+            const btnSec = document.getElementById('btn-sec-airport');
+            const btnMaj = document.getElementById('btn-maj-airport');
+
+            if (type === 'secondary') {
+                btnSec.className = "p-2 rounded-xl border font-bold text-center transition flex flex-col items-center bg-ry-blue border-ry-yellow text-white";
+                btnMaj.className = "p-2 rounded-xl border font-bold text-center transition flex flex-col items-center bg-slate-900 border-slate-700 text-slate-400";
+            } else {
+                btnMaj.className = "p-2 rounded-xl border font-bold text-center transition flex flex-col items-center bg-red-600 border-red-500 text-white";
+                btnSec.className = "p-2 rounded-xl border font-bold text-center transition flex flex-col items-center bg-slate-900 border-slate-700 text-slate-400";
+            }
+
+            calculateAll();
+        }
+
+        function initCharts() {
+            // Revenue Pie Chart
+            const ctxPie = document.getElementById('revenuePieChart').getContext('2d');
+            pieChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ticket', 'Gepäck', 'Sitzplatz', 'Prio', 'Food', 'Partner/Lotterie'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: ['#073590', '#f59e0b', '#a855f7', '#3b82f6', '#ef4444', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '65%'
+                }
+            });
+
+            // Cost Structure Bar Chart
+            const ctxBar = document.getElementById('costBreakdownChart').getContext('2d');
+            barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Treibstoff', 'Flughafen', 'Crew', 'Flotten-Malus', 'Hotel'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#a855f7', '#f59e0b'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function calculateAll() {
+            const spec = aircraftData[currentAircraft] || aircraftData.b737max;
+
+            // Inputs
+            const turnaroundTime = parseInt(document.getElementById('turnaroundTime').value);
+            const fleetSize = parseInt(document.getElementById('fleetSize').value);
+            const flightDuration = parseFloat(document.getElementById('flightDuration').value);
+            const loadFactorPct = parseInt(document.getElementById('loadFactor').value) / 100;
+            const basePrice = parseFloat(document.getElementById('basePrice').value);
+
+            const bagPct = parseInt(document.getElementById('baggage').value) / 100;
+            const seatPct = parseInt(document.getElementById('seats').value) / 100;
+            const prioPct = parseInt(document.getElementById('prio').value) / 100;
+            const foodPct = parseInt(document.getElementById('food').value) / 100;
+            const partnerPct = parseInt(document.getElementById('partners').value) / 100;
+            const lotteryPct = parseInt(document.getElementById('lottery').value) / 100;
+
+            const isMixedFleet = document.getElementById('mixedFleetToggle').checked;
+            const isCrewSleepHome = document.getElementById('crewHomeToggle').checked;
+
+            // Derived Passengers
+            const passengerCount = Math.round(spec.seats * loadFactorPct);
+
+            // Label Updates
+            document.getElementById('val-turnaroundTime').innerText = turnaroundTime;
+            document.getElementById('val-fleetSize').innerText = fleetSize;
+            document.getElementById('val-flightDuration').innerText = flightDuration.toFixed(1);
+            document.getElementById('val-loadFactor').innerText = Math.round(loadFactorPct * 100);
+            document.getElementById('val-passengerCount').innerText = passengerCount;
+            document.getElementById('val-basePrice').innerText = basePrice.toFixed(2);
+
+            document.getElementById('val-baggage').innerText = Math.round(bagPct * 100);
+            document.getElementById('val-seats').innerText = Math.round(seatPct * 100);
+            document.getElementById('val-prio').innerText = Math.round(prioPct * 100);
+            document.getElementById('val-food').innerText = Math.round(foodPct * 100);
+            document.getElementById('val-partners').innerText = Math.round(partnerPct * 100);
+            document.getElementById('val-lottery').innerText = Math.round(lotteryPct * 100);
+
+            // Turnaround & Daily Rotations Calculation
+            let effectiveTurnaround = currentAirport === 'secondary' ? turnaroundTime : turnaroundTime + 20;
+            let totalCycleTime = flightDuration + (effectiveTurnaround / 60);
+            let dailyRotations = Math.floor(14.0 / totalCycleTime); // 14 active operational flight hours/day
+            if (dailyRotations < 1) dailyRotations = 1;
+
+            document.getElementById('rotation-stat').innerText = `${dailyRotations} Flüge/Tag pro Jet`;
+
+            // Revenue Calculations
+            const ticketRev = passengerCount * basePrice;
+            const bagRev = passengerCount * bagPct * 32;
+            const seatRev = passengerCount * seatPct * 14;
+            const prioRev = passengerCount * prioPct * 20;
+            const foodRev = passengerCount * foodPct * 8;
+            const partnerRev = passengerCount * partnerPct * 18;
+            const lotteryRev = passengerCount * lotteryPct * 2;
+
+            const totalAncillary = bagRev + seatRev + prioRev + foodRev + partnerRev + lotteryRev;
+            const ancillaryPerPax = passengerCount > 0 ? totalAncillary / passengerCount : 0;
+            const totalRevenue = ticketRev + totalAncillary;
+
+            // Cost Calculations
+            const fuelCost = flightDuration * spec.fuelPerHour;
+            
+            let airportFees = currentAirport === 'secondary' ? 1200 : 3800;
+            if (currentAircraft === 'a380') airportFees *= 3.5; // Massive A380 airport fee
+            if (currentAircraft === 'b777') airportFees *= 2.2;
+
+            const crewBaseCost = flightDuration * 380;
+            const hotelCost = isCrewSleepHome ? 0 : 520;
+
+            // Mixed Fleet & Maintenance Penalty
+            let fleetPenalty = 0;
+            if (isMixedFleet) {
+                fleetPenalty = 950 * spec.maintenanceFactor;
+                document.getElementById('fleet-penalty-info').classList.remove('hidden');
+            } else {
+                document.getElementById('fleet-penalty-info').classList.add('hidden');
+            }
+
+            const totalCost = fuelCost + airportFees + crewBaseCost + hotelCost + fleetPenalty;
+            const netProfit = totalRevenue - totalCost;
+
+            const dailyFleetProfit = netProfit * dailyRotations * fleetSize;
+
+            // Ancillary Percentage
+            const ancPct = totalRevenue > 0 ? (totalAncillary / totalRevenue) * 100 : 0;
+            const ticketPct = 100 - ancPct;
+
+            // Display Updates
+            document.getElementById('total-revenue-display').innerText = formatEur(totalRevenue);
+            document.getElementById('ticket-vs-extras-sub').innerText = `${formatEur(ticketRev)} Ticket | ${formatEur(totalAncillary)} Extras`;
+            document.getElementById('ancillary-percentage-display').innerText = ancPct.toFixed(1) + '%';
+            document.getElementById('ancillary-total-display').innerText = `${formatEur(ancillaryPerPax)} pro Pax`;
+            document.getElementById('net-profit-display').innerText = formatEur(netProfit);
+            document.getElementById('daily-fleet-profit-display').innerText = `Flottengewinn/Tag: ${formatEur(dailyFleetProfit)}`;
+            document.getElementById('flight-cost-display').innerText = formatEur(totalCost);
+
+            // Profit Color formatting
+            const profitElem = document.getElementById('net-profit-display');
+            if (netProfit >= 0) {
+                profitElem.className = "text-2xl font-black text-emerald-400 mt-0.5";
+            } else {
+                profitElem.className = "text-2xl font-black text-red-400 mt-0.5";
+            }
+
+            // Progress Bar Widths
+            document.getElementById('ticket-share-percent').innerText = ticketPct.toFixed(0) + '%';
+            document.getElementById('ancillary-share-percent').innerText = ancPct.toFixed(0) + '%';
+            document.getElementById('bar-ticket').style.width = Math.max(5, ticketPct) + '%';
+            document.getElementById('bar-ancillary').style.width = Math.max(5, ancPct) + '%';
+
+            // Chart Updates
+            if (pieChart && barChart) {
+                pieChart.data.datasets[0].data = [ticketRev, bagRev, seatRev, prioRev, foodRev, partnerRev + lotteryRev];
+                pieChart.update();
+
+                barChart.data.datasets[0].data = [fuelCost, airportFees, crewBaseCost, fleetPenalty, hotelCost];
+                barChart.update();
+            }
+
+            // Update Video Explainer Text
+            updateInsightText(spec.name, currentAirport, isMixedFleet, isCrewSleepHome, ancPct, netProfit, dailyRotations, turnaroundTime);
+        }
+
+        function updateInsightText(acName, airport, mixed, crewHome, ancPct, profit, rotations, turnaround) {
+            const txt = document.getElementById('dynamic-insight-text');
+            let explanation = "";
+
+            if (turnaround > 45) {
+                explanation = `<strong>Bodenzeit-Falle (${turnaround} Min.):</strong> Weil der Flieger am Boden steht, sinkt die Anzahl der Tagesflüge auf <strong>${rotations} Rotationen</strong>. Fixkosten pro Passagier steigen drastisch! Fast jeder Gewinngenerator bricht ein.`;
+            } else if (mixed) {
+                explanation = `<strong>Flotten-Chaos aktiviert:</strong> Durch den Betrieb von verschiedenen Flugzeugtypen steigen Wartung und Schulungen massiv an. Genau deshalb fliegt Ryanair starr nur Boeing 737!`;
+            } else if (airport === 'major') {
+                explanation = `<strong>Kostenfalle Großflughafen:</strong> Höhere Landegebühren und lange Busfahrten/Gates verringern die Tagesflüge auf <strong>${rotations} Rotationen</strong>. Der Jet steht zu lange am Boden.`;
+            } else if (!crewHome) {
+                explanation = `<strong>Crew-Hotelkosten aktiv:</strong> Übernachtungen in Fremdhotels vernichten den Kostenvorteil gegenüber klassischen Airlines wie Lufthansa.`;
+            } else {
+                explanation = `<strong>Ryanair Realdaten-Modell:</strong> Bei ${turnaround} Min. Turnaround und Regionalflughäfen schafft die ${acName} <strong>${rotations} Flüge pro Tag</strong>. Das Ticket dient als Köder, während Zusatzverkäufe den Gewinn sichern.`;
+            }
+
+            txt.innerHTML = explanation;
+        }
+
+        function formatEur(val) {
+            return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+        }
+
+        // PRESETS & REAL-WORLD RYANAIR BENCHMARK RESET
+        function applyScenario(scenario) {
+            if (scenario === 'default') {
+                // RESET TO REAL RYANAIR AVERAGE BENCHMARKS
+                setAircraft('b737max');
+                setAirport('secondary');
+                document.getElementById('turnaroundTime').value = 25;
+                document.getElementById('flightDuration').value = 2.1;
+                document.getElementById('loadFactor').value = 94;
+                document.getElementById('basePrice').value = 50.60;
+                document.getElementById('fleetSize').value = 550;
+                
+                document.getElementById('baggage').value = 68;
+                document.getElementById('seats').value = 58;
+                document.getElementById('prio').value = 42;
+                document.getElementById('food').value = 38;
+                document.getElementById('partners').value = 15;
+                document.getElementById('lottery').value = 30;
+
+                document.getElementById('mixedFleetToggle').checked = false;
+                document.getElementById('crewHomeToggle').checked = true;
+            } else if (scenario === 'bait') {
+                setAircraft('b737max');
+                setAirport('secondary');
+                document.getElementById('basePrice').value = 9.99;
+                document.getElementById('baggage').value = 85;
+                document.getElementById('prio').value = 65;
+                document.getElementById('lottery').value = 50;
+            } else if (scenario === 'major-hub') {
+                setAircraft('b737classic');
+                setAirport('major');
+                document.getElementById('turnaroundTime').value = 50;
+                document.getElementById('basePrice').value = 50.60;
+            } else if (scenario === 'mixed-fleet') {
+                setAircraft('a320neo');
+                document.getElementById('mixedFleetToggle').checked = true;
+                document.getElementById('crewHomeToggle').checked = false;
+            }
+            calculateAll();
+        }
+
+        // INTERACTIVE SCRATCH CARD CANVAS
+        function initScratchCard() {
+            const canvas = document.getElementById('scratch-canvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Pattern design on scratch surface
+            ctx.fillStyle = '#073590';
+            ctx.font = '900 11px Plus Jakarta Sans';
+            ctx.textAlign = 'center';
+            ctx.fillText('RYANAIR LOTTERY', canvas.width / 2, canvas.height / 2 - 6);
+            
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '700 9px Plus Jakarta Sans';
+            ctx.fillText('Hier mit Maus freirubbeln!', canvas.width / 2, canvas.height / 2 + 12);
+
+            let isScratching = false;
+
+            function scratch(e) {
+                if (!isScratching) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 16, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            canvas.addEventListener('mousedown', () => isScratching = true);
+            canvas.addEventListener('mouseup', () => isScratching = false);
+            canvas.addEventListener('mousemove', scratch);
+
+            canvas.addEventListener('touchstart', () => isScratching = true);
+            canvas.addEventListener('touchend', () => isScratching = false);
+            canvas.addEventListener('touchmove', scratch);
+        }
+
+        function resetScratchCard() {
+            const canvas = document.getElementById('scratch-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.globalCompositeOperation = 'source-over';
+            initScratchCard();
+        }
+    </script>
+</body>
+</html>
